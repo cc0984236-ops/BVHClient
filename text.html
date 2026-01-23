@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Key</title>
+
+<style>
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#1e1433,#0b0f1a);
+    font-family:Arial,Helvetica,sans-serif;
+    color:#fff;
+}
+.box{
+    background:rgba(0,0,0,0.45);
+    padding:26px;
+    border-radius:18px;
+    width:90%;
+    max-width:380px;
+    box-shadow:0 0 40px rgba(0,0,0,0.6);
+    text-align:center;
+}
+h2{margin:0 0 10px;}
+.sub{font-size:13px;opacity:.8;margin-bottom:16px;}
+
+input{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:none;
+    background:rgba(255,255,255,0.08);
+    color:#2ecc71;
+    font-size:14px;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:14px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#9b5cff;
+    color:#fff;
+    font-size:15px;
+    font-weight:bold;
+}
+
+.info{margin-top:12px;font-size:12px;}
+.ok{color:#22c55e;}
+.err{color:#ef4444;}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+    <h2>🔐 GET KEY</h2>
+    <div class="sub">Hết hạn sau 24 giờ</div>
+
+    <input id="key" readonly>
+
+    <button onclick="copyKey()">📋 SAO CHÉP KEY</button>
+
+    <div class="info" id="status">Đang tạo key...</div>
+</div>
+
+<script>
+const EXPIRE = 24 * 60 * 60 * 1000;
+
+async function getIP(){
+    let r = await fetch("https://api.ipify.org?format=json");
+    let j = await r.json();
+    return j.ip;
+}
+
+function genKey(ip, time){
+    return "KEY-" + btoa(ip + "|" + time).replace(/=/g,"").substr(0,28);
+}
+
+async function loadKey(){
+    let ip = await getIP();
+    let now = Date.now();
+
+    let save = localStorage.getItem("KEY_DATA");
+    if(save){
+        let d = JSON.parse(save);
+        if(now < d.exp){
+            document.getElementById("key").value = d.key;
+            document.getElementById("status").innerHTML =
+                `<span class="ok">IP:</span> ${ip}<br>⏳ ${new Date(d.exp).toLocaleString()}`;
+            return;
+        }
+    }
+
+    let exp = now + EXPIRE;
+    let key = genKey(ip, exp);
+
+    localStorage.setItem("KEY_DATA", JSON.stringify({
+        key:key,
+        ip:ip,
+        exp:exp
+    }));
+
+    document.getElementById("key").value = key;
+    document.getElementById("status").innerHTML =
+        `<span class="ok">IP:</span> ${ip}<br>⏳ ${new Date(exp).toLocaleString()}`;
+}
+
+function copyKey(){
+    let input = document.getElementById("key");
+    input.select();
+    input.setSelectionRange(0,99999);
+    document.execCommand("copy");
+
+    document.getElementById("status").innerHTML =
+        `<span class="ok">✅ Đã sao chép key</span>`;
+}
+
+loadKey();
+</script>
+
+</body>
+</html>
